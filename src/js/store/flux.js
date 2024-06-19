@@ -1,189 +1,107 @@
 const getState = ({ getStore, getActions, setStore }) => {
-	return {
-		store: {
-			allAgendas: [],
+    return {
+        store: {
+            contacts: [],
+            selectedContact: null
+        },
+        actions: {
 
-			agendasFiltered: [],
-
-			search: "",
-
-			agendaSlug: "",
-
-			color: "",
-
-			eachContact: [],
-
-			currentUserData: {
-				address: "",
-				agenda_slug: "",
-				email: "",
-				full_name: "",
-				id: "",
-				phone: ""
-			},
-
-			newUserData: {
-				address: "",
-				agenda_slug: "",
-				email: "",
-				full_name: "",
-				phone: ""
-			},
-
-		},
-		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
-				console.log(store)
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
-
-				//reset the global store
-				setStore({ demo: demo });
-			},
-
-			getAllAgendas: async () => {
-				try {
-					const res = await fetch("https://playground.4geeks.com/apis/fake/contact/agenda")
-					const data = await res.json()
-					setStore({ allAgendas: data })
-				} catch (error) { }
-			},
-
-			toggleSearch: ({ target }) => {
-				setStore({ search: target.value })
-				const store = getStore();
-				const agendas = store.allAgendas
-				const filter = agendas.filter(agenda => agenda.toLowerCase().includes(target.value.toLowerCase()))
-				setStore({ agendasFiltered: filter })
-			},
-
-			getEachContact: async (user) => {
-				try {
-					const res = await fetch(`https://playground.4geeks.com/apis/fake/contact/agenda/${user}`)
-					const data = await res.json()
-					console.log(data)
-					setStore({ eachContact: data })
-				} catch (error) {
-					console.log(error);
-				}
-
-			},
-
-			toggleChange: ({ target }) => {
-				const store = getStore()
-				console.log(store.agendaSlug)
-				setStore({ [target.name]: target.value })
-			},
-
-			createAgenda: async () => {
-				const store = getStore();
-
-				const exampleUser = {
-					"full_name": "Cristiano Ronaldo",
-					"email": "elbicho@gmail.com",
-					"agenda_slug": `${store.agendaSlug}`,
-					"address": "47568 SIUUUU, FUNCHAL, PORTUGAL",
-					"phone": "0500 - SIU - 00"
-				}
-
-				const res = await fetch("https://playground.4geeks.com/apis/fake/contact/", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify(exampleUser)
-				})
-
-				getActions().getEachContact(store.agendaSlug)
-			},
-
-			deleteContact: async () => {
-				const store = getStore();
-				const user = store.currentUserData.agenda_slug
-				const id = store.currentUserData.id
-
-				const res = await fetch(`https://playground.4geeks.com/apis/fake/contact/${id}`, {
-					method: "DELETE",
-				})
-				const data = await res.json()
-				getActions().getEachContact(user);
-			},
-
-			getContactInfo: async (userId) => {
-				const store = getStore()
-				const res = await fetch(`https://playground.4geeks.com/apis/fake/contact/${userId}`)
-				const contactData = await res.json()
-				setStore({ currentUserData: contactData })
-				console.log(store.currentUserData)
-			},
-
-			changeContactInfo: ({ target }) => {
-				const store = getStore()
-				setStore({ currentUserData: { ...store.currentUserData, [target.name]: target.value } })
-				console.log(store.currentUserData)
-			},
-
-			updateContactInfo: async (id) => {
-				const store = getStore()
-				const res = await fetch(`https://playground.4geeks.com/apis/fake/contact/${id}`, {
-					method: "PUT",
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(store.currentUserData)
-				})
-				const data = await res.json()
-
-				getActions().getEachContact(store.currentUserData.agenda_slug)
-			},
-
-			newContactInfo: ({ target }, name) => {
-				const store = getStore()
-				setStore({ newUserData: { ...store.newUserData, [target.name]: target.value, agenda_slug: name } })
-				console.log(store.newUserData)
-			},
-
-			addContact: async () => {
-				const store = getStore()
-				if (store.newUserData.full_name !== "") {
-					const res = await fetch(`https://playground.4geeks.com/apis/fake/contact/`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json"
-						},
-						body: JSON.stringify(store.newUserData)
-					})
-					const data = await res.json()
-
-					getActions().getEachContact(store.newUserData.agenda_slug)
-
-					const emptyUserData = {
-						address: "",
-						agenda_slug: "",
-						email: "",
-						full_name: "",
-						phone: ""
-					}
-
-					setStore({ newUserData: emptyUserData })
-					console.log(store.newUserData)
-				} else alert("You must at least have the name of the contact")
-			}
-
-
-		}
-	};
+            fetchContacts: () => {
+                fetch('https://playground.4geeks.com/contact/agendas/woolmike/contacts')
+                    .then(response => {
+                        if (response.status === 404) {
+                            throw new Error('Agenda not found');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Contacts fetched:', data.contacts);
+                        localStorage.setItem('contacts', JSON.stringify(data.contacts));  // Guardar en LocalStorage
+                        setStore({ contacts: data.contacts });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching contacts:', error);
+                        if (error.message === 'Agenda not found') {
+                          
+                            fetch('https://playground.4geeks.com/contact/agendas/woolmike', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ agenda_name: 'Jorge_Enrique' })
+                            })
+                            .then(response => response.json())
+                            .then(() => {
+                                alert('Su agenda ha sido creada dentro de la base de datos. Por favor, recargue la página.');
+                            })
+                            .catch(postError => console.error('Error creating agenda:', postError));
+                        }
+                    });
+            },
+           
+            loadContactsFromLocalStorage: () => {
+                const localContacts = localStorage.getItem('contacts');
+                if (localContacts) {
+                    setStore({ contacts: JSON.parse(localContacts) });
+                }
+            },
+          
+            addContact: (contact) => {
+                fetch('https://playground.4geeks.com/contact/agendas/woolmike/contacts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(contact)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const store = getStore();
+                        const updatedContacts = [...store.contacts, data];
+                        localStorage.setItem('contacts', JSON.stringify(updatedContacts));  // Guardar en LocalStorage
+                        setStore({ contacts: updatedContacts });
+                    })
+                    .catch(error => console.error('Error adding contact:', error));
+            },
+           
+            updateContact: (contact) => {
+                fetch(`https://playground.4geeks.com/contact/agendas/woolmike/contacts/${contact.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(contact)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const store = getStore();
+                        const updatedContacts = store.contacts.map(c => c.id === data.id ? data : c);
+                        localStorage.setItem('contacts', JSON.stringify(updatedContacts));  // Guardar en LocalStorage
+                        setStore({ contacts: updatedContacts });
+                    })
+                    .catch(error => console.error('Error updating contact:', error));
+            },
+            // Delete a contact with DELETE
+            deleteContact: (id) => {
+                fetch(`https://playground.4geeks.com/contact/agendas/woolmike/contacts/${id}`, {
+                    method: 'DELETE'
+                })
+                    .then(() => {
+                        const store = getStore();
+                        const filteredContacts = store.contacts.filter(contact => contact.id !== id);
+                        localStorage.setItem('contacts', JSON.stringify(filteredContacts));  // Guardar en LocalStorage
+                        setStore({ contacts: filteredContacts });
+                    })
+                    .catch(error => console.error('Error deleting contact:', error));
+            },
+            setSelectedContact: (contact) => {
+                setStore({ selectedContact: contact });
+            },
+            clearSelectedContact: () => {
+                setStore({ selectedContact: null });
+            }
+        }
+    };
 };
 
 export default getState;

@@ -1,56 +1,58 @@
-import React from "react";
-import { useContext, useEffect, useState } from "react";
+// src/js/views/home.js
+import React, { useContext, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Context } from "../store/appContext";
-import { Link } from "react-router-dom";
-
-import "../../styles/home.css";
-import "../../styles/global.css";
+import '../../styles/home.css';
 
 export const Home = () => {
-	const { store, actions } = useContext(Context);
+    const { store, actions } = useContext(Context);
+    const navigate = useNavigate();
 
-	useEffect(() => {
-		actions.getAllAgendas()
-	}, [])
+    useEffect(() => {
+        actions.loadContactsFromLocalStorage();
+        actions.fetchContacts();
+    }, []);
 
-	const phrases = [
-		"Looks like this one is hiding something interesting, you should take a look jiji 😳",
-		"I wonder how many contacts this agenda may have... Don't you want to see?!?!",
-		"Wao TOP agenda to Gossip, there should be a contact in there that can help you with something 🤐",
-		"Look i know you will not believe me, but trust me, you want to gossip this agenda, TRUST ME 😉"
-	]
+    useEffect(() => {
+        console.log(Array.isArray(store.contacts));
+        console.log(store.contacts);  // Log para ver el estado de los contactos
+    }, [store.contacts]);
 
-	const agendaMap = store.allAgendas.map((user, index) =>
-		<div key={index} className="userCard">
-			<Link to={"/contactLi/" + user} className="card h-100 d-block text-decoration-none link">
-				<div className="card-body">
-					<h3 className="card-title">{user}</h3>
-					<p className="card-text">{phrases[Math.floor(Math.random() * phrases.length)]}</p>
-				</div>
-				<span className="eyes">👀</span>
-			</Link>
-		</div>
-	)
+    const handleEdit = (contact) => {
+        actions.setSelectedContact(contact);
+        navigate("/details");
+    };
 
-	const agendaFiltered = store.agendasFiltered.map((user, index) =>
-		<div key={index} className="userCard">
-			<Link to={"/contactLi/" + user} className="h-100 d-block text-decoration-none link">
-				<div className="card-body">
-					<h3 className="card-title">{user}</h3>
-					<p className="card-text">{phrases[Math.floor(Math.random() * phrases.length)]}</p>
-				</div>
-				<span className="eyes">👀</span>
-			</Link>
-		</div>
-	)
-
-	return (
-		<div className="text-center">
-			<h1 className="mt-3">Go<span style={{ color: "#f80753" }}>ss</span>ip Agendas</h1>
-			<input className="input" type="text" placeholder="Write Your Agenda Name" value={store.search} onChange={(event) => actions.toggleSearch(event)}></input>
-			<div className="wrapper">
-				{!store.agendasFiltered.length > 0 ? agendaMap : agendaFiltered}
-			</div>
-		</div>
-	)
-}
+    return (
+        <div className="container mt-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h1>Contact List</h1>
+                <Link to="/details" className="btn btn-success" onClick={() => actions.clearSelectedContact()}>
+                    <i className="fas fa-plus-circle me-2"></i>Add a new contact
+                </Link>
+            </div>
+            <div className="row">
+                <div className="col-12">
+                    {Array.isArray(store.contacts) && store.contacts?.map(contact => (
+                        <div key={contact.id} className="card mb-4 shadow-sm">
+                            <div className="card-body">
+                                <h5 className="card-title">{contact.name}</h5>
+                                <p className="card-text">Address: {contact.address}</p>
+                                <p className="card-text">Phone: {contact.phone}</p>
+                                <p className="card-text">e-mail: {contact.email}</p>
+                                <div className="d-flex justify-content-between">
+                                    <button className="btn btn-warning" onClick={() => handleEdit(contact)}>
+                                        <i className="fas fa-pencil-alt me-2"></i>Edit
+                                    </button>
+                                    <button className="btn btn-danger" onClick={() => actions.deleteContact(contact.id)}>
+                                        <i className="fas fa-trash-alt me-2"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
